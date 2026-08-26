@@ -1,0 +1,11 @@
+Fitur!
+Bisa mengisikan link gambar yang nantinya akan menampilkan gambar tersebut.
+Deteksi pelanggaran 3x akan selesai ujian
+Soal teracak sesuai permintaan jumlah soal dan Timer
+Jawaban Murid tersimpan pada Sheet Baru sesuai nama murid
+
+Petunjuk:
+code.gs dan index sesuai kan dengan contoh link diatas
+silahkan ganti SPREADSHEET_ID = pada code.gs
+sesuaikan i dari index menggunakan i kecil atau I besar
+Untuk mempermudah membuat sheet dan isi sheet silahkan di run setupDatabaseSheets pada APPS SCRIPT
