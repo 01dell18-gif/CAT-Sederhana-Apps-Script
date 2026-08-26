@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplikasi Ujian Online Sumatif</title>
+  
+  <!-- Font & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <style>
+    :root {
+      --primary: #0284c7; /* Sky Blue */
+      --primary-dark: #0369a1;
+      --secondary: #10b981; /* Emerald Green */
+      --secondary-dark: #059669;
+      --bg-light: #f8fafc;
+      --surface: #ffffff;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-light); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; user-select: none; }
+
+    /* Layout Utility */
+    .hidden { display: none !important; }
+    .flex-center { display: flex; align-items: center; justify-content: center; }
+    
+    /* Dynamic Image Rendering for Image URLs in cell text */
+    .rendered-img { 
+      max-width: 100%; 
+      max-height: 350px; 
+      object-fit: contain; 
+      border-radius: 8px; 
+      margin: 12px 0; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); 
+      display: block;
+    }
+
+    /* Header Section */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 2px solid var(--border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+    .header-brand { display: flex; align-items: center; gap: 12px; }
+    .header-logo { width: 45px; height: 45px; object-fit: contain; }
+    .header-title h1 { font-size: 1.1rem; text-transform: uppercase; color: var(--primary-dark); font-weight: 700; }
+    .header-title h2 { font-size: 0.9rem; color: var(--secondary-dark); font-weight: 600; }
+    .timer-badge { background: #fee2e2; color: #991b1b; padding: 8px 14px; border-radius: 20px; font-weight: 700; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+
+    /* Main Container */
+    .container { max-width: 1100px; margin: 20px auto; padding: 0 16px; width: 100%; flex: 1; }
+
+    /* Cards */
+    .card { background: var(--surface); border-radius: 12px; border: 1px solid var(--border); padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+
+    /* Forms */
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 0.9rem; color: var(--text-main); }
+    .form-control { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: 0.2s; }
+    .form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15); }
+
+    /* Buttons */
+    .btn { padding: 10px 20px; border-radius: 8px; border: none; font-weight: 600; font-size: 0.95rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-success { background: var(--secondary); color: white; }
+    .btn-success:hover { background: var(--secondary-dark); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Exam Screen Grid Layout */
+    .exam-layout { display: grid; grid-template-columns: 1fr 300px; gap: 20px; }
+    @media (max-width: 768px) {
+      .exam-layout { grid-template-columns: 1fr; }
+      .header-title h1 { font-size: 0.95rem; }
+      .header-title h2 { font-size: 0.8rem; }
+    }
+
+    /* Navigation Grid Numbers */
+    .nav-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 12px; }
+    .nav-btn { width: 100%; aspect-ratio: 1; border: 1px solid var(--border); background: var(--bg-light); border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+    .nav-btn.active { border-color: var(--primary); background: rgba(2, 132, 199, 0.1); color: var(--primary); }
+    .nav-btn.answered { background: var(--secondary); color: white; border-color: var(--secondary); }
+
+    /* Question Card & Options */
+    .question-box { font-size: 1.05rem; font-weight: 500; margin-bottom: 20px; line-height: 1.6; word-break: break-word; }
+    .option-item { border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; cursor: pointer; display: flex; align-items: flex-start; gap: 12px; transition: 0.2s; }
+    .option-item:hover { background: var(--bg-light); }
+    .option-item.selected { border-color: var(--secondary); background: rgba(16, 185, 129, 0.08); }
+    .option-item input { accent-color: var(--secondary); width: 18px; height: 18px; margin-top: 3px; }
+
+    /* Modal Warning Anti-Curang */
+    .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; }
+    .modal-card { background: white; border-radius: 12px; max-width: 450px; width: 100%; padding: 24px; text-align: center; }
+    .modal-icon { color: var(--danger); margin-bottom: 12px; }
+
+    /* Loader */
+    .spinner { border: 3px solid rgba(0,0,0,0.1); width: 36px; height: 36px; border-radius: 50%; border-left-color: var(--primary); animation: spin 1s linear infinite; margin: 20px auto; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header class="app-header">
+    <div class="header-brand">
+      <img id="school-logo" class="header-logo hidden" src="" alt="Logo">
+      <div class="header-title">
+        <h1 id="school-name">MEMUAT UJIAN...</h1>
+        <h2 id="subject-name">-</h2>
+      </div>
+    </div>
+    <div id="timer-box" class="timer-badge hidden">
+      <i data-lucide="clock"></i>
+      <span id="timer-display">00:00</span>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- Screen 1: Loading Screen -->
+    <div id="screen-loading" class="card flex-center" style="min-height: 300px; flex-direction: column;">
+      <div class="spinner"></div>
+      <p style="margin-top: 10px; color: var(--text-muted);">Menyiapkan sistem ujian...</p>
+    </div>
+
+    <!-- Screen 2: Login Form -->
+    <div id="screen-login" class="card hidden" style="max-width: 450px; margin: 40px auto;">
+      <h2 style="margin-bottom: 20px; color: var(--primary-dark); text-align: center;">Masuk Ujian</h2>
+      
+      <div class="form-group">
+        <label>Pilih Kelas</label>
+        <select id="login-kelas" class="form-control" onchange="onClassChange()">
+          <option value="">-- Pilih Kelas --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Nama Murid</label>
+        <select id="login-nama" class="form-control" disabled>
+          <option value="">-- Pilih Nama --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Password Ujian</label>
+        <input type="password" id="login-password" class="form-control" placeholder="Masukkan password">
+      </div>
+
+      <button id="btn-login" class="btn btn-primary" style="width: 100%;" onclick="processLogin()">
+        <i data-lucide="log-in"></i> Login
+      </button>
+    </div>
+
+    <!-- Screen 3: Petunjuk Ujian -->
+    <div id="screen-instructions" class="card hidden" style="max-width: 600px; margin: 30px auto;">
+      <h2 style="color: var(--primary-dark); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+        <i data-lucide="file-text"></i> Petunjuk Ujian
+      </h2>
+      <ul style="margin-left: 20px; margin-bottom: 20px; line-height: 1.8; color: var(--text-main);">
+        <li>Jawablah seluruh pertanyaan yang disajikan dengan teliti.</li>
+        <li>Anda dapat beralih antar soal menggunakan navigasi tombol atau grid nomor.</li>
+        <li>Dilarang keluar dari mode full-screen, membelah layar (split-screen), atau berpindah aplikasi/tab.</li>
+        <li><strong>Sistem Anti-Curang Aktif:</strong> Peringatan diberikan maksimal 2 kali. Pelanggaran ke-3 kali akan langsung menghentikan ujian Anda secara otomatis.</li>
+      </ul>
+      <button class="btn btn-success" style="width: 100%;" onclick="startExam()">
+        <i data-lucide="play"></i> Mulai Menjawab
+      </button>
+    </div>
+
+    <!-- Screen 4: Soal Ujian -->
+    <div id="screen-exam" class="hidden">
+      <div class="exam-layout">
+        
+        <!-- Main Question Area -->
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 16px; border-bottom: 1px solid var(--border); padding-bottom: 8px;">
+            <span id="question-type-badge" style="font-weight: 700; color: var(--primary); font-size: 0.9rem;">-</span>
+            <span id="question-number-badge" style="font-weight: 600; color: var(--text-muted);">Soal 1</span>
+          </div>
+
+          <div id="question-content" class="question-box"></div>
+          <div id="options-container"></div>
+
+          <!-- Bottom Navigation Controls -->
+          <div style="display: flex; justify-content: space-between; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 16px;">
+            <button id="btn-prev" class="btn btn-primary" onclick="changeQuestion(-1)">
+              <i data-lucide="chevron-left"></i> Sebelumnya
+            </button>
+            <button id="btn-next" class="btn btn-primary" onclick="changeQuestion(1)">
+              Berikutnya <i data-lucide="chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Sidebar / Grid Navigasi -->
+        <div>
+          <div class="card">
+            <h3 style="font-size: 1rem; margin-bottom: 12px; color: var(--text-main);">Navigasi Soal</h3>
+            <div id="nav-grid-container" class="nav-grid"></div>
+            <button id="btn-submit" class="btn btn-success" style="width: 100%; margin-top: 20px;" onclick="confirmSubmitExam()" disabled>
+              <i data-lucide="check-circle"></i> Selesai Ujian
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Screen 5: Hasil Ujian -->
+    <div id="screen-result" class="card hidden" style="max-width: 500px; margin: 40px auto; text-align: center;">
+      <i data-lucide="award" style="width: 64px; height: 64px; color: var(--secondary); margin-bottom: 12px;"></i>
+      <h2 style="color: var(--primary-dark); margin-bottom: 8px;">Ujian Selesai!</h2>
+      <p style="color: var(--text-muted); margin-bottom: 24px;">Data jawaban Anda telah berhasil disimpan.</p>
+
+      <div style="background: var(--bg-light); border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+        <div style="font-size: 2.5rem; font-weight: 700; color: var(--primary);" id="res-score">0</div>
+        <div style="color: var(--text-muted); font-size: 0.9rem;">Nilai Akhir</div>
+        <hr style="margin: 12px 0; border: none; border-top: 1px solid var(--border);">
+        <div style="display: flex; justify-content: space-around; font-weight: 600;">
+          <div>Benar: <span id="res-correct" style="color: var(--secondary);">0</span></div>
+          <div>Total Soal: <span id="res-total">0</span></div>
+        </div>
+      </div>
+      <p id="res-cheat-status" style="font-size: 0.85rem; color: var(--danger); font-weight: 600;"></p>
+    </div>
+
+  </div>
+
+  <!-- Modal Anti-Kecurangan -->
+  <div id="cheat-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <i data-lucide="alert-triangle" class="modal-icon" style="width: 48px; height: 48px;"></i>
+      <h3 id="modal-title" style="margin-bottom: 10px; color: var(--danger);">Peringatan Kecurangan!</h3>
+      <p id="modal-desc" style="color: var(--text-main); margin-bottom: 20px; font-size: 0.95rem;"></p>
+      <button class="btn btn-primary" onclick="closeCheatModal()">Saya Mengerti</button>
+    </div>
+  </div>
+
+  <script>
+    // System Global States
+    let appSettings = {};
+    let questionsData = [];
+    let userAnswers = {};
+    let currentIndex = 0;
+    let selectedStudent = { class: '', name: '' };
+    
+    // Timer & Cheat Guard States
+    let timerInterval = null;
+    let totalTimeSeconds = 0;
+    let cheatCount = 0;
+    let cheatLog = [];
+    let isExamActive = false;
+
+    // Initialize Web App
+    window.addEventListener('load', () => {
+      lucide.createIcons();
+      google.script.run.withSuccessHandler(initApp).getInitialData();
+    });
+
+    function initApp(data) {
+      appSettings = data.settings;
+      
+      // Render Header Details
+      document.getElementById('school-name').innerText = appSettings.sekolah;
+      document.getElementById('subject-name').innerText = appSettings.mapel;
+      if (appSettings.logo) {
+        const logoImg = document.getElementById('school-logo');
+        logoImg.src = appSettings.logo;
+        logoImg.classList.remove('hidden');
+      }
+
+      // Populate Classes Dropdown
+      const kelasSelect = document.getElementById('login-kelas');
+      data.listKelas.forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.innerText = k;
+        kelasSelect.appendChild(opt);
+      });
+
+      showScreen('screen-login');
+    }
+
+    function onClassChange() {
+      const selectedClass = document.getElementById('login-kelas').value;
+      const namaSelect = document.getElementById('login-nama');
+      namaSelect.innerHTML = '<option value="">-- Pilih Nama --</option>';
+
+      if (!selectedClass) {
+        namaSelect.disabled = true;
+        return;
+      }
+
+      google.script.run.withSuccessHandler(students => {
+        students.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s;
+          opt.innerText = s;
+          namaSelect.appendChild(opt);
+        });
+        namaSelect.disabled = false;
+      }).getStudentsByClass(selectedClass);
+    }
+
+    function processLogin() {
+      const kelas = document.getElementById('login-kelas').value;
+      const nama = document.getElementById('login-nama').value;
+      const password = document.getElementById('login-password').value;
+
+      if (!kelas || !nama || !password) {
+        alert('Mohon lengkapi semua data login!');
+        return;
+      }
+
+      if (password !== appSettings.password) {
+        alert('Password Ujian Salah!');
+        return;
+      }
+
+      selectedStudent = { class: kelas, name: nama };
+
+      // Pre-fetch Exam Questions
+      showScreen('screen-loading');
+      google.script.run.withSuccessHandler(questions => {
+        questionsData = questions;
+        showScreen('screen-instructions');
+      }).getExamQuestions();
+    }
+
+    /* -------------------------------------------------------------------------
+       EXAM FUNCTIONALITIES & TIMER
+    ------------------------------------------------------------------------- */
+    function startExam() {
+      showScreen('screen-exam');
+      document.getElementById('timer-box').classList.remove('hidden');
+      
+      isExamActive = true;
+      setupAntiCheatGuard();
+      requestFullScreenMode();
+
+      // Initialize Timer
+      totalTimeSeconds = appSettings.timer * 60;
+      updateTimerDisplay();
+      timerInterval = setInterval(() => {
+        totalTimeSeconds--;
+        updateTimerDisplay();
+        if (totalTimeSeconds <= 0) {
+          clearInterval(timerInterval);
+          autoSubmitExam('Waktu Habis');
+        }
+      }, 1000);
+
+      renderQuestion(0);
+      renderNavGrid();
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(totalTimeSeconds / 60);
+      const s = totalTimeSeconds % 60;
+      document.getElementById('timer-display').innerText = 
+        `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // Dynamic Image Processor
+    function parseContentWithImages(text) {
+      if (!text) return '';
+      const urlRegex = /(https?:\/\/[^\s<]+)/gi;
+      return text.replace(urlRegex, (url) => {
+        return `<br><img src="${url}" class="rendered-img" alt="Gambar Soal" onerror="this.style.display='none';"><br>`;
+      });
+    }
+
+    function renderQuestion(index) {
+      currentIndex = index;
+      const q = questionsData[index];
+
+      // Update Header Badges
+      document.getElementById('question-number-badge').innerText = `Soal ${index + 1} dari ${questionsData.length}`;
+      
+      let typeLabel = 'Pilihan Ganda';
+      if (q.type === 'PGK') typeLabel = 'Pilihan Ganda Kompleks (Bisa pilih > 1)';
+      if (q.type === 'BS') typeLabel = 'Benar / Salah';
+      document.getElementById('question-type-badge').innerText = typeLabel;
+
+      // Question Content Parsing
+      document.getElementById('question-content').innerHTML = parseContentWithImages(q.question);
+
+      // Render Options
+      const optionsContainer = document.getElementById('options-container');
+      optionsContainer.innerHTML = '';
+
+      const currentAnswers = userAnswers[index] || (q.type === 'PGK' ? [] : '');
+
+      Object.keys(q.options).forEach(key => {
+        const optText = q.options[key];
+        if (optText === undefined || optText === '') return;
+
+        const optDiv = document.createElement('div');
+        optDiv.className = 'option-item';
+        
+        const isSelected = q.type === 'PGK' 
+          ? currentAnswers.includes(key) 
+          : currentAnswers === key;
+
+        if (isSelected) optDiv.classList.add('selected');
+
+        const inputType = q.type === 'PGK' ? 'checkbox' : 'radio';
+        
+        // PERBAIKAN: Jika tipe Benar/Salah (BS), hanya tampilkan teks tanpa label huruf/kunci double
+        let labelText = '';
+        if (q.type === 'BS') {
+          labelText = parseContentWithImages(String(optText));
+        } else {
+          labelText = `<strong>${key}.</strong> ${parseContentWithImages(String(optText))}`;
+        }
+
+        optDiv.innerHTML = `
+          <input type="${inputType}" name="option" value="${key}" ${isSelected ? 'checked' : ''}>
+          <div style="flex: 1;">${labelText}</div>
+        `;
+
+        optDiv.onclick = (e) => {
+          handleOptionSelect(q.type, key);
+        };
+
+        optionsContainer.appendChild(optDiv);
+      });
+
+      // Update Nav Buttons State
+      document.getElementById('btn-prev').disabled = index === 0;
+      document.getElementById('btn-next').disabled = index === questionsData.length - 1;
+
+      renderNavGrid();
+      checkSubmitRequirement();
+    }
+
+    function handleOptionSelect(type, key) {
+      if (type === 'PGK') {
+        let selectedArr = userAnswers[currentIndex] || [];
+        if (selectedArr.includes(key)) {
+          selectedArr = selectedArr.filter(k => k !== key);
+        } else {
+          selectedArr.push(key);
+        }
+        userAnswers[currentIndex] = selectedArr;
+      } else {
+        userAnswers[currentIndex] = key;
+      }
+      renderQuestion(currentIndex);
+    }
+
+    function changeQuestion(direction) {
+      const target = currentIndex + direction;
+      if (target >= 0 && target < questionsData.length) {
+        renderQuestion(target);
+      }
+    }
+
+    function renderNavGrid() {
+      const container = document.getElementById('nav-grid-container');
+      container.innerHTML = '';
+
+      questionsData.forEach((q, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'nav-btn';
+        btn.innerText = idx + 1;
+
+        const ans = userAnswers[idx];
+        const isAnswered = Array.isArray(ans) ? ans.length > 0 : !!ans;
+
+        if (isAnswered) btn.classList.add('answered');
+        if (idx === currentIndex) btn.classList.add('active');
+
+        btn.onclick = () => renderQuestion(idx);
+        container.appendChild(btn);
+      });
+    }
+
+    function checkSubmitRequirement() {
+      const answeredCount = Object.keys(userAnswers).filter(k => {
+        const ans = userAnswers[k];
+        return Array.isArray(ans) ? ans.length > 0 : !!ans;
+      }).length;
+
+      document.getElementById('btn-submit').disabled = answeredCount < questionsData.length;
+    }
+
+    /* -------------------------------------------------------------------------
+       ANTI-KECURANGAN (TAB SWITCH, MINIMIZE, SPLIT-SCREEN, FULLSCREEN DETECT)
+    ------------------------------------------------------------------------- */
+    function setupAntiCheatGuard() {
+      document.addEventListener('visibilitychange', () => {
+        if (!isExamActive) return;
+        if (document.hidden) {
+          triggerCheatViolation('Terdeteksi meninggalkan halaman/berpindah aplikasi.');
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        if (!isExamActive) return;
+        triggerCheatViolation('Fokus layar hilang (terdeteksi klik di luar layar/split screen).');
+      });
+
+      window.addEventListener('resize', () => {
+        if (!isExamActive) return;
+        const ratio = window.innerHeight / window.screen.height;
+        if (ratio < 0.75) { 
+          triggerCheatViolation('Ukuran layar tidak valid (Terdeteksi Layar Terbelah / Split-Screen).');
+        }
+      });
+    }
+
+    function requestFullScreenMode() {
+      const elem = document.documentElement;
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        elem.webkitRequestFullscreen();
+      }
+    }
+
+    function triggerCheatViolation(reason) {
+      cheatCount++;
+      cheatLog.push(`[${new Date().toLocaleTimeString()}] ${reason}`);
+
+      if (cheatCount >= 3) {
+        autoSubmitExam('Didiskualifikasi: Melakukan Kecurangan 3x (' + reason + ')');
+      } else {
+        document.getElementById('modal-title').innerText = `Peringatan Kecurangan (${cheatCount}/3)`;
+        document.getElementById('modal-desc').innerText = `${reason}. Mengulangi pelanggaran hingga 3 kali akan menghentikan ujian Anda secara otomatis!`;
+        document.getElementById('cheat-modal').classList.remove('hidden');
+      }
+    }
+
+    function closeCheatModal() {
+      document.getElementById('cheat-modal').classList.add('hidden');
+      requestFullScreenMode();
+    }
+
+    /* -------------------------------------------------------------------------
+       SUBMISSION & RESULT HANDLERS
+    ------------------------------------------------------------------------- */
+    function confirmSubmitExam() {
+      if (confirm('Apakah Anda yakin ingin menyelesaikan ujian ini?')) {
+        autoSubmitExam('Selesai Normal');
+      }
+    }
+
+    function autoSubmitExam(cheatStatus) {
+      isExamActive = false;
+      clearInterval(timerInterval);
+      document.getElementById('cheat-modal').classList.add('hidden');
+
+      showScreen('screen-loading');
+
+      const payload = {
+        studentName: selectedStudent.name,
+        studentClass: selectedStudent.class,
+        userAnswers: userAnswers,
+        questions: questionsData,
+        cheatStatus: cheatStatus + (cheatLog.length ? ` | Log: ${cheatLog.join('; ')}` : '')
+      };
+
+      google.script.run.withSuccessHandler(renderResult).submitAnswers(payload);
+    }
+
+    function renderResult(res) {
+      showScreen('screen-result');
+      document.getElementById('timer-box').classList.add('hidden');
+
+      document.getElementById('res-score').innerText = res.finalScore;
+      document.getElementById('res-correct').innerText = res.correctCount;
+      document.getElementById('res-total').innerText = res.totalQuestions;
+      document.getElementById('res-cheat-status').innerText = res.cheatStatus;
+      
+      lucide.createIcons();
+    }
+
+    function showScreen(id) {
+      const screens = ['screen-loading', 'screen-login', 'screen-instructions', 'screen-exam', 'screen-result'];
+      screens.forEach(s => {
+        document.getElementById(s).classList.add('hidden');
+      });
+      document.getElementById(id).classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
